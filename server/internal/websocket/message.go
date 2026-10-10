@@ -1,6 +1,10 @@
 package websocket
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/godeck/godeck-server/internal/input"
+)
 
 // Message represents the WebSocket json event envelope.
 type Message struct {
@@ -56,4 +60,15 @@ type DeckPage struct {
 // LayoutPayload contains deck configuration.
 type LayoutPayload struct {
 	Pages []DeckPage `json:"pages"`
+}
+
+// LaunchAppPayload defines payload to open an installed desktop application.
+type LaunchAppPayload struct {
+	Name string `json:"name"`
+	Path string `json:"path"`
+}
+
+// AppsListPayload contains list of installed applications on the host PC.
+type AppsListPayload struct {
+	Apps []input.DesktopApp `json:"apps"`
 }

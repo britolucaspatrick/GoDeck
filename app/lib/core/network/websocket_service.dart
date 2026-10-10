@@ -85,6 +85,32 @@ class WebSocketService {
     _channel!.sink.add(message.toRawJson());
   }
 
+  void requestApps() {
+    if (!_isConnected || _channel == null) return;
+
+    final message = WebSocketMessage(
+      eventType: 'request_apps',
+      timestamp: DateTime.now().millisecondsSinceEpoch,
+    );
+
+    _channel!.sink.add(message.toRawJson());
+  }
+
+  void launchApp(String name, String path) {
+    if (!_isConnected || _channel == null) return;
+
+    final message = WebSocketMessage(
+      eventType: 'action',
+      timestamp: DateTime.now().millisecondsSinceEpoch,
+      payload: {
+        'type': 'system_command',
+        'command': path.isNotEmpty ? 'open "$path"' : 'open -a "$name"',
+      },
+    );
+
+    _channel!.sink.add(message.toRawJson());
+  }
+
   void _onMessageReceived(dynamic data) {
     try {
       final Map<String, dynamic> jsonMap = jsonDecode(data.toString());

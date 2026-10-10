@@ -57,8 +57,9 @@ class ConnectionProvider extends ChangeNotifier {
       await prefs.setString(AppConstants.prefsHostKey, targetHost);
       await prefs.setInt(AppConstants.prefsPortKey, targetPort);
 
-      // Request deck layout from host server
+      // Request deck layout and desktop apps list from host server
       _wsService.requestLayout();
+      _wsService.requestApps();
     } catch (e) {
       _state = _state.copyWith(
         status: ConnectionStatus.error,

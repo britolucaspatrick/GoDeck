@@ -55,6 +55,12 @@ func (d *EventDispatcher) Dispatch(client *Client, rawMsg []byte) {
 	case "save_layout":
 		d.handleSaveLayout(client, msg.Payload)
 
+	case "request_apps":
+		d.handleRequestApps(client)
+
+	case "launch_app":
+		d.handleLaunchApp(client, msg.Payload, start)
+
 	default:
 		d.sendError(client, "UNKNOWN_EVENT", "Event type not supported: "+msg.EventType)
 	}
@@ -195,6 +201,60 @@ func (d *EventDispatcher) handleSaveLayout(client *Client, rawPayload json.RawMe
 
 	ackMsgBytes, _ := json.Marshal(ack)
 	client.Send <- ackMsgBytes
+}
+
+func (d *EventDispatcher) handleRequestApps(client *Client) {
+	apps, err := input.ListInstalledApps()
+	if err != nil {
+		log.Printf("[Dispatcher] Error scanning host apps: %v", err)
+		d.sendError(client, "SCAN_APPS_ERROR", "Failed to list desktop applications")
+		return
+	}
+
+	payload := AppsListPayload{Apps: apps}
+	payloadBytes, _ := json.Marshal(payload)
+
+	msg := Message{
+		EventType: "apps_list",
+		Timestamp: time.Now().UnixMilli(),
+		Payload:   payloadBytes,
+	}
+
+	msgBytes, _ := json.Marshal(msg)
+	client.Send <- msgBytes
+}
+
+func (d *EventDispatcher) handleLaunchApp(client *Client, rawPayload json.RawMessage, startTime time.Time) {
+	var appLaunch LaunchAppPayload
+	if err := json.Unmarshal(rawPayload, &appLaunch); err != nil {
+		d.sendError(client, "INVALID_APP_PAYLOAD", "Cannot parse app launch payload")
+		return
+	}
+
+	execErr := input.LaunchDesktopApp(appLaunch.Name, appLaunch.Path)
+	elapsed := float64(time.Since(startTime).Microseconds()) / 1000.0
+
+	status := "success"
+	errMsg := ""
+	if execErr != nil {
+		status = "error"
+		errMsg = execErr.Error()
+	}
+
+	ack := Message{
+		EventType: "ack",
+		Timestamp: time.Now().UnixMilli(),
+	}
+	ackPayload := AckPayload{
+		Status:      status,
+		Message:     errMsg,
+		ExecutionMS: elapsed,
+	}
+	ackPayloadBytes, _ := json.Marshal(ackPayload)
+	ack.Payload = ackPayloadBytes
+
+	msgBytes, _ := json.Marshal(ack)
+	client.Send <- msgBytes
 }
 
 func (d *EventDispatcher) sendError(client *Client, code, message string) {

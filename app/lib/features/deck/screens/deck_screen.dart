@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../apps/screens/apps_screen.dart';
 import '../../connection/models/connection_state.dart';
 import '../../connection/providers/connection_provider.dart';
 import '../../connection/screens/connection_screen.dart';
+import '../models/deck_item.dart';
 import '../providers/deck_provider.dart';
 import '../widgets/deck_grid.dart';
 import '../widgets/trackpad_view.dart';
@@ -51,13 +53,7 @@ class DeckScreen extends StatelessWidget {
               ),
             ],
           ),
-          body: deckProvider.activeViewTab == 0
-              ? (currentPage != null
-                  ? DeckGridWidget(page: currentPage)
-                  : const Center(
-                      child: Text('Nenhuma página de macro carregada.', style: TextStyle(color: AppTheme.textSecondary)),
-                    ))
-              : const TrackpadViewWidget(),
+          body: _buildActiveTabBody(deckProvider, currentPage),
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: deckProvider.activeViewTab,
             onTap: (index) => deckProvider.setActiveTab(index),
@@ -66,18 +62,39 @@ class DeckScreen extends StatelessWidget {
             unselectedItemColor: AppTheme.textSecondary,
             items: const [
               BottomNavigationBarItem(
-                icon: Icon(Icons.apps_rounded),
+                icon: Icon(Icons.grid_view_rounded),
                 label: 'Macro Deck',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.touch_app_rounded),
                 label: 'Trackpad',
               ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.computer_rounded),
+                label: 'Programas PC',
+              ),
             ],
           ),
         );
       },
     );
+  }
+
+  Widget _buildActiveTabBody(DeckProvider deckProvider, DeckPageModel? currentPage) {
+    switch (deckProvider.activeViewTab) {
+      case 0:
+        return currentPage != null
+            ? DeckGridWidget(page: currentPage)
+            : const Center(
+                child: Text('Nenhuma página de macro carregada.', style: TextStyle(color: AppTheme.textSecondary)),
+              );
+      case 1:
+        return const TrackpadViewWidget();
+      case 2:
+        return const AppsScreen();
+      default:
+        return const SizedBox.shrink();
+    }
   }
 
   Widget _buildLatencyBadge(BuildContext context, GoDeckConnectionState connState) {
